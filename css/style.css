@@ -1,0 +1,23 @@
+#searchResults {
+  color: blue;
+  margin-left: 25px;
+  margin-top: 20px;
+}
+.searchResult {
+  margin-left: 10px;
+}
+.searchResult::before {
+  content: " * ";
+}
+.searchResult:hover {
+  color: green;
+  font-weight: 700;
+}
+.heading {
+  font-weight: 700;
+  margin-top: 5px;
+  margin-bottom: 0px;
+}
+ul {
+  margin-top: 0px;
+}

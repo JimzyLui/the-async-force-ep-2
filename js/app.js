@@ -1,9 +1,32 @@
 const d = document;
 const main = d.getElementById("contentContainer");
 
-const h2 = d.createElement("h2");
-const p1 = d.createElement("p");
-const p2 = d.createElement("p");
+let h2 = d.createElement("h2");
+let p1 = d.createElement("p");
+let p2 = d.createElement("p");
+let searchResults = d.createElement("div");
+searchResults.id = "searchResults";
+searchResults.classList.add("container");
+
+const clearScreen = () => {
+  while (main.firstChild) {
+    main.removeChild(main.firstChild);
+  }
+  h2.innerHTML = "";
+  p1.innerHTML = "";
+  p2.innerHTML = "";
+};
+const clearSearch = () => {
+  while (searchResults.firstChild) {
+    searchResults.removeChild(searchResults.firstChild);
+  }
+};
+
+const cResourceType = d.getElementById("resourceType");
+cResourceType.addEventListener("change", clearScreen);
+arrPlanets = [];
+arrPersons = [];
+arrStarships = [];
 
 const request = (url, callback) => {
   const oReq = new XMLHttpRequest();
@@ -15,7 +38,31 @@ const request = (url, callback) => {
   oReq.send();
 };
 
+const processObjPersonById = function(event) {
+  processObjPerson(arrPersons[event.target.id]);
+};
+
+const processObjPerson = oPerson => {
+  clearSearch();
+  // Name
+  h2.innerHTML = "Name: " + oPerson.name;
+
+  // Gender
+  p1.innerHTML = "<b>Gender: </b>" + oPerson.gender;
+
+  // Species
+  request(oPerson.species, function(data) {
+    console.log("data", data);
+    p2.innerHTML = "<b>Species: </b>" + data.name;
+  });
+};
+
+const processObjPlanetById = function(event) {
+  processObjPlanet(arrPlanets[event.target.id]);
+};
+
 const processObjPlanet = oPlanet => {
+  clearSearch();
   // Name
   h2.innerHTML = "Planet: " + oPlanet.name;
 
@@ -28,6 +75,10 @@ const processObjPlanet = oPlanet => {
   // FilmList
   const arrFilmUrls = oPlanet.films;
   if (arrFilmUrls.length > 0) {
+    const pFilmsHeading = d.createElement("div");
+    pFilmsHeading.id = "pFilmsHeading";
+    pFilmsHeading.classList.add("heading");
+    pFilmsHeading.innerHTML = "Films: ";
     const ulFilmList = d.createElement("ul");
     arrFilmUrls.forEach(function(url) {
       request(url, function(data) {
@@ -42,15 +93,21 @@ const processObjPlanet = oPlanet => {
         ulFilmList.appendChild(liFilm);
       });
     });
+    main.appendChild(pFilmsHeading);
     main.appendChild(ulFilmList);
   }
 };
 
 const btnSubmit = d.getElementById("requestResourceButton");
 const displayData = () => {
-  while (main.firstChild) {
-    main.removeChild(main.firstChild);
-  }
+  clearScreen();
+  clearSearch();
+  arrPersons = [];
+  arrPlanets = [];
+  searchResults = d.createElement("div");
+  searchResults.id = "searchResults";
+  searchResults.classList.add("container");
+  main.appendChild(searchResults);
   const resourceType = d.getElementById("resourceType").value;
   console.log("resourceType: ", resourceType);
   const resourceIdValue = d.getElementById("resourceId").value; // what is typed in
@@ -60,22 +117,35 @@ const displayData = () => {
       request("https://swapi.co/api/people", function(data) {
         console.log("data", data);
         // DOM MANIPULATING CODE HERE
-        const arrPerson = data.results.filter(
+        arrPersons = data.results.filter(
           o => o.name.toLowerCase().indexOf(resourceIdValue.toLowerCase()) > -1
         );
-        if (arrPerson.length > 0) {
-          const oPerson = arrPerson.pop();
-          // Name
-          h2.innerHTML = "Name: " + oPerson.name;
 
-          // Gender
-          p1.innerHTML = "<b>Gender: </b>" + oPerson.gender;
+        switch (arrPersons.length) {
+          case 0:
+            // no data
+            main.innerHTML = "No persons matched " + resourceIdValue + "!";
+            break;
+          case 1:
+            const oPerson = arrPersons.pop();
+            processObjPerson(oPerson);
+            break;
+          default:
+            const divSearchHeading = d.createElement("div");
+            divSearchHeading.id = "divSearchHeading";
+            divSearchHeading.classList.add("heading");
+            divSearchHeading.innerHTML = "Search Results: ";
+            searchResults.appendChild(divSearchHeading);
 
-          // Species
-          request(oPerson.species, function(data) {
-            console.log("data", data);
-            p2.innerHTML = "<b>Species: </b>" + data.name;
-          });
+            arrPersons.forEach((o, idx) => {
+              const c = d.createElement("div");
+              c.innerHTML = o.name;
+              c.id = idx;
+              c.classList.add("searchResult");
+              c.addEventListener("click", processObjPersonById);
+              console.log(c);
+              searchResults.appendChild(c);
+            });
         }
       });
       break;
@@ -83,19 +153,34 @@ const displayData = () => {
       if (!resourceIdValue) return;
       request("https://swapi.co/api/planets", function(data) {
         console.log("data", data);
-        const arrPlanets = data.results.filter(
+        arrPlanets = data.results.filter(
           o => o.name.toLowerCase().indexOf(resourceIdValue.toLowerCase()) > -1
         );
-        if (arrPlanets.length > 0) {
-          arrPlanets.forEach(o => {
-            const c = d.createElement("div");
-            c.innerHTML = c.name;
-          });
-          const oPlanet = arrPlanets.pop();
-          processObjPlanet(oPlanet);
-        } else {
-          // no data
-          main.innerHTML = "No planets matched " + resourceIdValue + "!";
+        switch (arrPlanets.length) {
+          case 0:
+            // no data
+            main.innerHTML = "No planets matched " + resourceIdValue + "!";
+            break;
+          case 1:
+            const oPlanet = arrPlanets.pop();
+            processObjPlanet(oPlanet);
+            break;
+          default:
+            const divSearchHeading = d.createElement("div");
+            divSearchHeading.id = "divSearchHeading";
+            divSearchHeading.classList.add("heading");
+            divSearchHeading.innerHTML = "Search Results: ";
+            searchResults.appendChild(divSearchHeading);
+            arrPlanets.forEach((o, idx) => {
+              const c = d.createElement("div");
+              c.innerHTML = o.name;
+              c.id = idx;
+              c.classList.add("searchResult");
+              c.addEventListener("click", processObjPlanetById);
+              console.log(c);
+              searchResults.appendChild(c);
+            });
+            break;
         }
       });
       break;
