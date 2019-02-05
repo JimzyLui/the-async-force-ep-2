@@ -22,6 +22,18 @@ const clearSearch = () => {
   }
 };
 
+const compareNameInSort = (a, b) => {
+  if (a.name < b.name) return -1;
+  if (a.name > b.name) return 1;
+  return 0;
+};
+
+const compareTitleInSort = (a, b) => {
+  if (a.title < b.title) return -1;
+  if (a.title > b.title) return 1;
+  return 0;
+};
+
 const cResourceType = d.getElementById("resourceType");
 cResourceType.addEventListener("change", clearScreen);
 arrPlanets = [];
@@ -52,7 +64,7 @@ const processObjPerson = oPerson => {
 
   // Species
   request(oPerson.species, function(data) {
-    console.log("data", data);
+    // console.log("data", data);
     p2.innerHTML = "<b>Species: </b>" + data.name;
   });
 };
@@ -74,13 +86,55 @@ const processObjPlanet = oPlanet => {
 
   // FilmList
   const arrFilmUrls = oPlanet.films;
+  // console.log("arrFilmUrls", arrFilmUrls);
   if (arrFilmUrls.length > 0) {
     const pFilmsHeading = d.createElement("div");
     pFilmsHeading.id = "pFilmsHeading";
     pFilmsHeading.classList.add("heading");
     pFilmsHeading.innerHTML = "Films: ";
     const ulFilmList = d.createElement("ul");
-    arrFilmUrls.forEach(function(url) {
+    arrFilmUrls.sort(compareTitleInSort).forEach(function(url) {
+      request(url, function(data) {
+        // console.log("film Data", data);
+        const liFilm = d.createElement("li");
+        liFilm.classList.add("film");
+        const h2FilmTitle = d.createElement("div");
+        h2FilmTitle.classList.add("filmTitle");
+        h2FilmTitle.innerHTML = data.title;
+
+        liFilm.appendChild(h2FilmTitle);
+        ulFilmList.appendChild(liFilm);
+      });
+    });
+    main.appendChild(pFilmsHeading);
+    main.appendChild(ulFilmList);
+  }
+};
+
+const processObjStarshipById = function(event) {
+  processObjStarship(arrStarships[event.target.id]);
+};
+
+const processObjStarship = oStarship => {
+  clearSearch();
+  // Name
+  h2.innerHTML = "Starship: " + oStarship.name;
+
+  // Manufacturer
+  p1.innerHTML = "<b>Manufacturer: </b>" + oStarship.manufacturer;
+
+  // Class
+  p2.innerHTML = "<b>Class: </b>" + oStarship.model;
+  console.log("before starship filmlist");
+  // FilmList
+  const arrFilmUrls = oStarship.films;
+  if (arrFilmUrls.length > 0) {
+    const pFilmsHeading = d.createElement("div");
+    pFilmsHeading.id = "pFilmsHeading";
+    pFilmsHeading.classList.add("heading");
+    pFilmsHeading.innerHTML = "Films: ";
+    const ulFilmList = d.createElement("ul");
+    arrFilmUrls.sort(compareTitleInSort).forEach(function(url) {
       request(url, function(data) {
         console.log("film Data", data);
         const liFilm = d.createElement("li");
@@ -104,6 +158,7 @@ const displayData = () => {
   clearSearch();
   arrPersons = [];
   arrPlanets = [];
+  arrStarships = [];
   searchResults = d.createElement("div");
   searchResults.id = "searchResults";
   searchResults.classList.add("container");
@@ -121,6 +176,7 @@ const displayData = () => {
           o => o.name.toLowerCase().indexOf(resourceIdValue.toLowerCase()) > -1
         );
 
+        if (!resourceIdValue) return;
         switch (arrPersons.length) {
           case 0:
             // no data
@@ -137,7 +193,7 @@ const displayData = () => {
             divSearchHeading.innerHTML = "Search Results: ";
             searchResults.appendChild(divSearchHeading);
 
-            arrPersons.forEach((o, idx) => {
+            arrPersons.sort(compareNameInSort).forEach((o, idx) => {
               const c = d.createElement("div");
               c.innerHTML = o.name;
               c.id = idx;
@@ -150,7 +206,6 @@ const displayData = () => {
       });
       break;
     case "planets":
-      if (!resourceIdValue) return;
       request("https://swapi.co/api/planets", function(data) {
         console.log("data", data);
         arrPlanets = data.results.filter(
@@ -171,7 +226,7 @@ const displayData = () => {
             divSearchHeading.classList.add("heading");
             divSearchHeading.innerHTML = "Search Results: ";
             searchResults.appendChild(divSearchHeading);
-            arrPlanets.forEach((o, idx) => {
+            arrPlanets.sort(compareNameInSort).forEach((o, idx) => {
               const c = d.createElement("div");
               c.innerHTML = o.name;
               c.id = idx;
@@ -185,14 +240,49 @@ const displayData = () => {
       });
       break;
     case "starships":
-      // Name
-      h2.innerHTML = "starships";
-      // Manufacturer
-      p1.innerHTML = "Manufacturer";
-      // Starship Class
-      p2.innerHTML = "Starship";
-      // FilmList
+      request("https://swapi.co/api/starships", function(data) {
+        console.log("starship data", data);
+        arrStarships = data.results.filter(
+          o => o.name.toLowerCase().indexOf(resourceIdValue.toLowerCase()) > -1
+        );
+        console.log("arrStarships", arrStarships);
+        switch (arrStarships.length) {
+          case 0:
+            // no data
+            main.innerHTML = "No starships matched " + resourceIdValue + "!";
+            break;
+          case 1:
+            const oStarship = arrStarships.pop();
+            processObjStarship(oStarship);
+            break;
+          default:
+            const divSearchHeading = d.createElement("div");
+            divSearchHeading.id = "divSearchHeading";
+            divSearchHeading.classList.add("heading");
+            divSearchHeading.innerHTML = "Search Results: ";
+            searchResults.appendChild(divSearchHeading);
+            arrStarships.sort(compareNameInSort).forEach((o, idx) => {
+              console.log(idx, o.name);
+              const c = d.createElement("div");
+              c.innerHTML = o.name;
+              c.id = idx;
+              c.classList.add("searchResult");
+              c.addEventListener("click", processObjStarshipById);
+              console.log(c);
+              searchResults.appendChild(c);
+            });
+            break;
+        }
+      });
       break;
+    // // Name
+    // h2.innerHTML = "starships";
+    // // Manufacturer
+    // p1.innerHTML = "Manufacturer";
+    // // Starship Class
+    // p2.innerHTML = "Starship";
+    // // FilmList
+    // break;
   }
   main.appendChild(h2);
   main.appendChild(p1);
